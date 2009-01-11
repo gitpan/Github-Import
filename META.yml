@@ -1,0 +1,30 @@
+---
+abstract: 'Import your project into L<http://github.com>'
+author:
+  - 'Jonathan Rockway'
+distribution_type: module
+generated_by: 'Module::Install version 0.77'
+license: mit
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: Github-Import
+no_index:
+  directory:
+    - inc
+    - t
+requires:
+  Crypt::SSLeay: 0
+  File::HomeDir: 0
+  File::pushd: 0
+  LWP::UserAgent: 0
+  Moose: 0
+  MooseX::Declare: 0
+  MooseX::Getopt: 0
+  MooseX::Types::Path::Class: 0
+  String::TT: 0
+  Test::Exception: 0
+  Test::use::ok: 0
+  URI: 0
+  YAML::Tiny: 0
+version: 0.01
