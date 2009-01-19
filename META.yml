@@ -27,4 +27,4 @@ requires:
   Test::use::ok: 0
   URI: 0
   YAML::Tiny: 0
-version: 0.02
+version: 0.03

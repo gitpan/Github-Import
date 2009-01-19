@@ -1,6 +1,8 @@
 use MooseX::Declare;
 
 class Github::Import with MooseX::Getopt {
+    # for the PAUSE indexer
+    package Github::Import;
     use Moose::Util::TypeConstraints qw(enum);
     use MooseX::Types::Path::Class qw(Dir File);
     use LWP::UserAgent;
@@ -14,7 +16,7 @@ class Github::Import with MooseX::Getopt {
 
     use namespace::clean -except => 'meta';
 
-    our $VERSION = "0.02";
+    our $VERSION = "0.03";
 
     has use_config_file => (
         traits  => [qw(NoGetopt)],
