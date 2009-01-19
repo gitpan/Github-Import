@@ -14,17 +14,14 @@ no_index:
     - inc
     - t
 requires:
-  Crypt::SSLeay: 0
   File::HomeDir: 0
-  File::pushd: 0
+  Git: 0
   LWP::UserAgent: 0
-  Moose: 0
-  MooseX::Declare: 0
+  Moose: 0.64
   MooseX::Getopt: 0
   MooseX::Types::Path::Class: 0
-  String::TT: 0
   Test::Exception: 0
   Test::use::ok: 0
   URI: 0
-  YAML::Tiny: 0
-version: 0.03
+  namespace::clean: 0
+version: 0.04
