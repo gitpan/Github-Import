@@ -24,4 +24,4 @@ requires:
   Test::use::ok: 0
   URI: 0
   namespace::clean: 0
-version: 0.04
+version: 0.05

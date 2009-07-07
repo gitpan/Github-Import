@@ -7,9 +7,9 @@ use Carp qw(croak);
 
 use namespace::clean -except => 'meta';
 
-with qw(MooseX::Getopt);
+with qw(MooseX::Getopt::Dashes);
 
-our $VERSION = "0.04";
+our $VERSION = "0.05";
 
 has use_config_file => (
     traits  => [qw(NoGetopt)],
@@ -23,7 +23,6 @@ has config_file => (
     isa           => File,
     is            => "ro",
     coerce        => 1,
-    cmd_flag      => "config-file",
     cmd_aliases   => "f",
     documentation => "Use an alternate config file",
     predicate     => "has_config_file",
@@ -108,7 +107,6 @@ has dry_run => (
     traits      => [qw(Getopt)],
     isa         => "Bool",
     is          => "ro",
-    cmd_flag    => "dry-run",
     cmd_aliases => "n",
     documentation => "don't actually do anything",
 );
@@ -128,12 +126,29 @@ has project_name => (
     is            => 'ro',
     isa           => 'Str',
     lazy_build    => 1,
-    cmd_flag      => "project-name",
     cmd_aliases   => "N",
     documentation => "the name of the project to create",
 );
 
-sub _build_project_name { lc shift->project->absolute->dir_list(-1) }
+sub _build_project_name {
+    my $self = shift;
+
+    my $name = $self->project->absolute->dir_list(-1);
+    $name = lc $name if $self->lowercase;
+
+    $name =~ s{[:-]+}{-}g;
+
+    return $name;
+}
+
+has lowercase => (
+    traits        => [qw(Getopt)],
+    is            => 'ro',
+    isa           => 'Bool',
+    default       => 1,
+    cmd_aliases   => "l",
+    documentation => "lowercase the project name for compatibility",
+);
 
 has description => (
     traits        => [qw(Getopt)],
@@ -179,7 +194,6 @@ has add_remote => (
     traits        => [qw(Getopt)],
     is            => "ro",
     isa           => "Bool",
-    cmd_flag      => "add-remote",
     lazy_build    => 1,
     cmd_aliases   => "a",
     documentation => "add a remote for github to .git/config (defaults to true)",
@@ -204,7 +218,6 @@ has push_mode => (
     is            => "ro",
     isa           => enum([qw(all mirror)]),
     predicate     => "has_push_mode",
-    cmd_flag      => "push-mode",
     cmd_aliases   => "m",
     documentation => "'all' or 'mirror', overrides other push options",
 );
@@ -248,7 +261,6 @@ has push_uri => (
     isa           => "Str",
     is            => "ro",
     lazy_build    => 1,
-    cmd_flag      => "push-uri",
     cmd_aliases   => "u",
     documentation => "override the default github push uri",
 );
@@ -381,6 +393,10 @@ sub do_add_remote {
         $self->run_git(
             [qw(remote add), $remote, $push],
         );
+
+        $self->run_git(
+            [qw(config github.repo), $self->project_name],
+        );
     }
 }
 
@@ -412,6 +428,7 @@ Github::Import - Import your project into L<http://github.com>
 
 =head1 SYNOPSIS
 
+    # You can see your token at https://github.com/account
     % cd some_project_in_git
     % github-import --username jrockway --token decafbad --add-remote --push-mode all
 
@@ -504,7 +521,7 @@ Defaults to the basename of C<project>.
 
 If true a repository will be created on github.
 
-Defaults to true. Requires C<username> and C<password>.
+Defaults to true. Requires C<username> and C<token>.
 
 =item add_remote
 

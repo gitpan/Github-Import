@@ -1,4 +1,6 @@
+.gitignore
 bin/github-import
+Changes
 inc/Module/Install.pm
 inc/Module/Install/Base.pm
 inc/Module/Install/Can.pm
@@ -10,6 +12,7 @@ inc/Module/Install/WriteAll.pm
 lib/Github/Import.pm
 Makefile.PL
 MANIFEST			This list of files
+MANIFEST.SKIP
 META.yml
 README.mkdn
 t/01load.t
