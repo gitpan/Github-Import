@@ -9,7 +9,7 @@ use namespace::clean -except => 'meta';
 
 with qw(MooseX::Getopt::Dashes);
 
-our $VERSION = "0.05";
+our $VERSION = "0.06";
 
 has use_config_file => (
     traits  => [qw(NoGetopt)],
@@ -37,7 +37,8 @@ sub _git_conf {
 
     if ( defined( my $value = $self->git_handle->$method($var) ) ) {
         return $value;
-    } else {
+    }
+    else {
         return $default;
     }
 }
@@ -98,10 +99,12 @@ has ssl => (
     traits        => [qw(Getopt)],
     is            => 'ro',
     isa           => 'Bool',
-    default       => 0,
+    lazy_build    => 1,
     documentation => "use https instead of http",
     cmd_aliases   => "S",
 );
+
+sub _build_ssl { shift->_conf_bool('github-import.ssl', 0) }
 
 has dry_run => (
     traits      => [qw(Getopt)],
@@ -145,10 +148,12 @@ has lowercase => (
     traits        => [qw(Getopt)],
     is            => 'ro',
     isa           => 'Bool',
-    default       => 1,
+    lazy_build    => 1,
     cmd_aliases   => "l",
     documentation => "lowercase the project name for compatibility",
 );
+
+sub _build_lowercase { shift->_conf_bool( 'github-import.lowercase' => 0 ) }
 
 has description => (
     traits        => [qw(Getopt)],
@@ -253,7 +258,7 @@ has github_path => (
 
 sub _build_github_path {
     my $self = shift;
-    sprintf "%s/%s", $self->username, $self->project_name;
+    return join '/', $self->username, $self->project_name;
 }
 
 has push_uri => (
@@ -267,7 +272,22 @@ has push_uri => (
 
 sub _build_push_uri {
     my $self = shift;
-    sprintf 'git@github.com:' . $self->github_path . '.git';
+    return 'git@github.com:' . $self->github_path . '.git';
+}
+
+has setup_rebase => (
+    traits        => [qw(Getopt)],
+    isa           => "Bool",
+    is            => "ro",
+    lazy_build    => 1,
+    documentation => "setup the new ref to auto-rebase when pulled",
+);
+
+sub _build_setup_rebase {
+    my $self = shift;
+    my $config = $self->_conf_var('branch.autosetuprebase') || 'never';
+    return 1 if $config eq 'remote' || $config eq 'always';
+    return 0;
 }
 
 # internals
@@ -326,7 +346,19 @@ sub run {
 
     if($self->push){
         $self->msg('Pushing existing master to github');
+
+        # Even when github has created the repo we could still get
+        # errors like this because it lags:
+        ## Pushing existing master to github
+        ## fatal: '/data/repositories/c/c3/30/32/avar/digest-whirlpool.git' does not appear to be a git repository
+        ## fatal: The remote end hung up unexpectedly
+        ## push --tags origin master: command returned error: 128
+        ##
+        # So sleep for a bit before pushing to the repo
+        sleep 3;
+
         $self->do_push;
+        $self->update_config_for_pull;
         $self->msg('Pushed OK');
     }
 };
@@ -357,7 +389,7 @@ sub do_create {
         # XXX: not sure how to detect errors here, other than the obvious
         $self->err('Error creating project: ' . $res->status_line) unless $res->is_success;
     }
-    return 'http://github.com/' . $self->github_path;
+    return $uri->scheme . '://github.com/' . $self->github_path;
 };
 
 sub run_git {
@@ -414,6 +446,25 @@ sub do_push {
         [ push => @args ],
         print_output => 1,
     );
+}
+
+sub update_config_for_pull {
+    my $self = shift;
+    my $remote = $self->remote;
+
+    $self->run_git(
+        [ config => 'branch.master.remote', $remote ],
+    );
+
+    $self->run_git(
+        [ config => 'branch.master.merge', 'refs/heads/master' ],
+    );
+
+    # if the standard option branch.autosetuprebase is set, then we do
+    # the same thing that "git clone" and other utils do.
+    $self->run_git(
+        [ config => 'branch.master.rebase', 'true' ]
+    ) if $self->setup_rebase;
 }
 
 1;
